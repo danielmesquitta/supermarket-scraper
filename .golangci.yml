@@ -1,0 +1,12 @@
+linters-settings:
+  govet:
+    shadow: true
+linters:
+  enable:
+    - goconst
+    - gofmt
+    - goimports
+    - revive
+    - unconvert
+    - unparam
+    - lll
