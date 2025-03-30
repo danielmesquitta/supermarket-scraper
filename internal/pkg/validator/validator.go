@@ -20,7 +20,7 @@ type Validation struct {
 	t ut.Translator
 }
 
-func NewValidation() *Validation {
+func New() *Validation {
 	validate := validator.New()
 	english := en.New()
 	uni := ut.New(english, english)

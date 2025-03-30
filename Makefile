@@ -5,15 +5,19 @@ default: run
 
 .PHONY: install
 install:
-	@go mod download && ./bin/install.sh
+	@go mod download && ./bin/install.sh && go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps
 
 .PHONY: update
 update:
 	@go get -u ./... && go mod tidy
 
+.PHONY: setup
+setup:
+	@$(CHROME_PATH) --remote-debugging-port=$(CDP_PORT) --profile-directory=Default
+
 .PHONY: run
 run:
-	@air -c .air.toml
+	@go run ./cmd/webscraper
 
 .PHONY: clear
 clear:

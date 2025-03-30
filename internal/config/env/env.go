@@ -28,7 +28,7 @@ type Env struct {
 
 	Environment Environment `mapstructure:"ENVIRONMENT" validate:"required,oneof=development production staging test"`
 	ChromePath  string      `mapstructure:"CHROME_PATH" validate:"required"`
-	CDPPort     int         `mapstructure:"CDP_PORT"    validate:"required"`
+	CDPPort     string      `mapstructure:"CDP_PORT"    validate:"required"`
 }
 
 func NewEnv(v validator.Validator) *Env {
