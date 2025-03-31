@@ -1,6 +1,5 @@
 .env*
 !.env.example
 
-data/*
 tmp/*
 !.gitkeep
