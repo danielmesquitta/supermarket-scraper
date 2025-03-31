@@ -5,13 +5,12 @@ import (
 	"errors"
 	"log"
 	"os/signal"
-	"sync"
 	"syscall"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/app/webscraper"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/config"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/pkg/errs"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/pkg/validator"
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
 )
 
 func main() {
@@ -21,27 +20,25 @@ func main() {
 		syscall.SIGTERM,
 	)
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	g := errgroup.Group{}
+	g.Go(func() error {
 		defer cancel()
 
-		v := validator.New()
-		env := config.LoadConfig(v)
-
-		app := webscraper.New(env)
+		app := webscraper.New()
 		if err := app.Run(ctx); err != nil {
-			handleError(err)
-			return
+			return err
 		}
-	}()
+
+		return nil
+	})
 
 	<-ctx.Done()
 
 	log.Println("Shutting down...")
 
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		handleError(err)
+	}
 }
 
 func handleError(err error) {

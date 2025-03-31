@@ -26,12 +26,13 @@ const (
 type Env struct {
 	v validator.Validator
 
-	Environment Environment `mapstructure:"ENVIRONMENT" validate:"required,oneof=development production staging test"`
-	ChromePath  string      `mapstructure:"CHROME_PATH" validate:"required"`
-	CDPPort     string      `mapstructure:"CDP_PORT"    validate:"required"`
+	Environment  Environment `mapstructure:"ENVIRONMENT"    validate:"required,oneof=development production staging test"`
+	ChromePath   string      `mapstructure:"CHROME_PATH"    validate:"required"`
+	CDPPort      string      `mapstructure:"CDP_PORT"       validate:"required"`
+	SQLiteDBPath string      `mapstructure:"SQLITE_DB_PATH" validate:"required"`
 }
 
-func NewEnv(v validator.Validator) *Env {
+func New(v validator.Validator) *Env {
 	e := &Env{
 		v: v,
 	}

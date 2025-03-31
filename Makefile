@@ -1,5 +1,8 @@
 include .env
 
+schema=./sql/schema.prisma
+ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+
 .PHONY: default
 default: run
 
@@ -38,3 +41,18 @@ lint:
 .PHONY: lint-fix
 lint-fix:
 	@golangci-lint run --fix && golines **/*.go -w -m 80
+
+.PHONY: migrate
+migrate:
+	@prisma-client-go migrate dev --schema=$(schema) --skip-generate
+
+.PHONY: deploy_migrations
+deploy_migrations:
+	@prisma-client-go migrate deploy --schema=$(schema)
+
+.PHONY: reset_db
+reset_db:
+	@prisma-client-go migrate reset --schema=$(schema) --skip-generate
+
+%::
+	@true

@@ -1,0 +1,25 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./sqlite.db"
+}
+
+model Product {
+  id         String   @id
+  name       String
+  price      Float
+  created_at DateTime @default(now())
+
+  @@map("products")
+}
+
+model Error {
+  id          String    @id
+  message     String
+  type        String
+  stack_trace String
+  metadata    String
+  created_at  DateTime  @default(now())
+  deleted_at  DateTime?
+
+  @@map("errors")
+}

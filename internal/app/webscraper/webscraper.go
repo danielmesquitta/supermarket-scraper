@@ -3,17 +3,17 @@ package webscraper
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
-	"os"
-	"path"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/pkg/errs"
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/db"
 	"github.com/playwright-community/playwright-go"
 )
 
@@ -35,14 +35,17 @@ var categories = []string{
 }
 
 type WebScraper struct {
-	e *env.Env
+	e  *env.Env
+	db *db.DB
 }
 
-func New(
+func Build(
 	e *env.Env,
+	db *db.DB,
 ) *WebScraper {
 	return &WebScraper{
-		e: e,
+		e:  e,
+		db: db,
 	}
 }
 
@@ -69,7 +72,7 @@ func (w *WebScraper) Run(ctx context.Context) error {
 	defer func() { _ = page.Close() }()
 
 	for _, category := range categories {
-		err := processCategory(ctx, page, category)
+		err := w.processCategory(ctx, page, category)
 		if err != nil {
 			return errs.New(err)
 		}
@@ -78,19 +81,29 @@ func (w *WebScraper) Run(ctx context.Context) error {
 	return nil
 }
 
-func processCategory(
+func (w *WebScraper) processCategory(
 	ctx context.Context,
 	page playwright.Page,
 	category string,
-) error {
-	if err := ctx.Err(); err != nil {
+) (err error) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		_ = w.saveError(
+			errs.New(err, errs.ErrTypeFailedProcessingCategoryPage),
+			map[string]any{"page_url": page.URL()},
+		)
+	}()
+
+	if err = ctx.Err(); err != nil {
 		return errs.New(err)
 	}
 
-	if _, err := page.Goto(fmt.Sprintf("https://www.atacadao.com.br/%s", category)); err != nil {
+	if _, err = page.Goto(fmt.Sprintf("https://www.atacadao.com.br/%s", category)); err != nil {
 		return errs.New(err)
 	}
-	if err := page.WaitForLoadState(); err != nil {
+	if err = page.WaitForLoadState(); err != nil {
 		return errs.New(err)
 	}
 
@@ -101,7 +114,9 @@ func processCategory(
 		totalProductsCountSelector := "h2[data-testid='total-product-count']"
 		totalProductsCountLocator := page.Locator(totalProductsCountSelector).
 			First()
-		totalProductsCountStr, err := totalProductsCountLocator.InnerText()
+
+		var totalProductsCountStr string
+		totalProductsCountStr, err = totalProductsCountLocator.InnerText()
 		if err != nil {
 			return errs.New(err)
 		}
@@ -112,7 +127,8 @@ func processCategory(
 		}
 	}
 
-	products, err := processPage(ctx, page, category)
+	var products []entity.Product
+	products, err = w.processPage(ctx, page)
 	if err != nil {
 		return errs.New(err)
 	}
@@ -120,7 +136,7 @@ func processCategory(
 		return nil
 	}
 
-	if err := saveProductsToJSONFile(products); err != nil {
+	if err = w.saveProducts(ctx, products); err != nil {
 		return errs.New(err)
 	}
 
@@ -131,18 +147,18 @@ func processCategory(
 		if _, err = page.Goto(fmt.Sprintf("https://www.atacadao.com.br/%s?page=%d", category, pageCount)); err != nil {
 			return errs.New(err)
 		}
-		if err := page.WaitForLoadState(); err != nil {
+		if err = page.WaitForLoadState(); err != nil {
 			return errs.New(err)
 		}
 
-		products, err := processPage(ctx, page, category)
+		products, err = w.processPage(ctx, page)
 		if err != nil {
 			return errs.New(err)
 		}
 		if len(products) == 0 {
 			break
 		}
-		if err := saveProductsToJSONFile(products); err != nil {
+		if err = w.saveProducts(ctx, products); err != nil {
 			return errs.New(err)
 		}
 	}
@@ -150,25 +166,34 @@ func processCategory(
 	return nil
 }
 
-func processPage(
+func (w *WebScraper) processPage(
 	ctx context.Context,
 	page playwright.Page,
-	category string,
-) ([]entity.Product, error) {
-	if err := ctx.Err(); err != nil {
+) (products []entity.Product, err error) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		_ = w.saveError(
+			errs.New(err, errs.ErrTypeFailedProcessingProductsPage),
+			map[string]any{"page_url": page.URL()},
+		)
+	}()
+
+	if err = ctx.Err(); err != nil {
 		return nil, errs.New(err)
 	}
 	productsSelector := "div[data-fs-product-listing-results='true'] section[data-testid='store-product-card-content']"
 	productsLocator := page.Locator(productsSelector)
 
-	err := productsLocator.First().WaitFor(playwright.LocatorWaitForOptions{
+	err = productsLocator.First().WaitFor(playwright.LocatorWaitForOptions{
 		State: playwright.WaitForSelectorStateVisible,
 	})
 	if err != nil {
 		return nil, errs.New(err)
 	}
-
-	allProductsLocator, err := productsLocator.All()
+	var allProductsLocator []playwright.Locator
+	allProductsLocator, err = productsLocator.All()
 	if err != nil {
 		return nil, errs.New(err)
 	}
@@ -177,11 +202,12 @@ func processPage(
 		return nil, errs.New("no products found")
 	}
 
-	products := []entity.Product{}
 	for _, productLocator := range allProductsLocator {
 		productNameSelector := "h3"
 		productNameLocator := productLocator.Locator(productNameSelector)
-		productName, err := productNameLocator.InnerText()
+
+		var productName string
+		productName, err = productNameLocator.InnerText()
 		if err != nil {
 			return nil, errs.New(err)
 		}
@@ -190,26 +216,32 @@ func processPage(
 		productBulkPriceLocator := productLocator.Locator(
 			productBulkPriceSelector,
 		)
-		productBulkPriceStr, err := productBulkPriceLocator.InnerText()
+
+		var productBulkPriceStr string
+		productBulkPriceStr, err = productBulkPriceLocator.InnerText()
 		if err != nil {
 			return nil, errs.New(err)
 		}
 
-		productBulkPrice, err := parsePrice(productBulkPriceStr)
+		var productBulkPrice float64
+		productBulkPrice, err = parsePrice(productBulkPriceStr)
 		if err != nil {
 			return nil, errs.New(err)
 		}
 
 		productPriceSelector := ".flex.items-center.gap-1"
 		productPriceLocator := productLocator.Locator(productPriceSelector)
-		productPriceLocatorCount, err := productPriceLocator.Count()
+
+		var productPriceLocatorCount int
+		productPriceLocatorCount, err = productPriceLocator.Count()
 		if err != nil {
 			return nil, errs.New(err)
 		}
 
 		var productPrice float64
 		if productPriceLocatorCount > 0 {
-			productPriceStr, err := productPriceLocator.InnerText()
+			var productPriceStr string
+			productPriceStr, err = productPriceLocator.InnerText()
 			if err != nil {
 				return nil, errs.New(err)
 			}
@@ -222,49 +254,63 @@ func processPage(
 		actualPrice := max(productBulkPrice, productPrice)
 
 		products = append(products, entity.Product{
-			Name:     productName,
-			Price:    actualPrice,
-			Category: category,
+			Name:  productName,
+			Price: actualPrice,
 		})
 	}
 
 	return products, nil
 }
 
-func saveProductsToJSONFile(
+func (w *WebScraper) saveProducts(
+	ctx context.Context,
 	products []entity.Product,
 ) error {
-	filePath := path.Join("data", "products.json")
-
-	if _, err := os.Stat(filePath); err != nil {
-		if !os.IsNotExist(err) {
-			return errs.New(err)
-		}
-		if err := os.MkdirAll(path.Dir(filePath), os.ModePerm); err != nil {
-			return errs.New(err)
-		}
-		if err := os.WriteFile(filePath, []byte("[]"), 0644); err != nil {
-			return errs.New(err)
-		}
+	if len(products) == 0 {
+		return nil
 	}
 
-	fileData, err := os.ReadFile(filePath)
-	if err != nil {
+	if err := w.db.CreateProducts(ctx, products); err != nil {
 		return errs.New(err)
 	}
 
-	var existingProducts []entity.Product
-	if err := json.Unmarshal(fileData, &existingProducts); err != nil {
-		return errs.New(err)
+	return nil
+}
+
+func (w *WebScraper) saveError(
+	err error,
+	metadata map[string]any,
+) error {
+	if err == nil {
+		return nil
 	}
 
-	products = append(existingProducts, products...)
-	jsonData, err := json.MarshalIndent(products, "", "  ")
-	if err != nil {
-		return errs.New(err)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	entityErr := entity.Error{
+		Message: err.Error(),
+		Type:    string(errs.ErrTypeUnknown),
 	}
 
-	if err := os.WriteFile(filePath, jsonData, 0644); err != nil {
+	var appErr *errs.Err
+	if errors.As(err, &appErr) {
+		if metadata != nil {
+			metadataBytes, err := json.Marshal(metadata)
+			if err != nil {
+				return errs.New(err)
+			}
+			entityErr.Metadata = string(metadataBytes)
+		}
+
+		if appErr.Type != "" {
+			entityErr.Type = string(appErr.Type)
+		}
+
+		entityErr.StackTrace = appErr.StackTrace
+	}
+
+	if err := w.db.CreateError(ctx, entityErr); err != nil {
 		return errs.New(err)
 	}
 
