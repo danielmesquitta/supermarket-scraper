@@ -7,10 +7,11 @@ import (
 )
 
 type Product struct {
-	ID        string    `db:"id" json:"id,omitempty"`
-	Name      string    `db:"name" json:"name,omitempty"`
-	Price     float64   `db:"price" json:"price,omitempty"`
-	CreatedAt time.Time `db:"created_at" json:"created_at,omitempty"`
+	ID        string     `db:"id" json:"id,omitempty"`
+	Name      string     `db:"name" json:"name,omitempty"`
+	Price     float64    `db:"price" json:"price,omitempty"`
+	CreatedAt time.Time  `db:"created_at" json:"created_at,omitempty"`
+	DeletedAt *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }
 
 type Error struct {

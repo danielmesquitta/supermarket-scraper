@@ -4,10 +4,11 @@ datasource db {
 }
 
 model Product {
-  id         String   @id
+  id         String    @id
   name       String
   price      Float
-  created_at DateTime @default(now())
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
 
   @@map("products")
 }

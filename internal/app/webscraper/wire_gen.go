@@ -7,10 +7,10 @@
 package webscraper
 
 import (
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/app/webscraper/handler"
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/config"
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/pkg/validator"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/db"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/db/sqlx"
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/db/sqlite"
 )
 
 // Injectors from wire.go:
@@ -18,8 +18,8 @@ import (
 func New() *WebScraper {
 	validation := validator.New()
 	env := config.LoadConfig(validation)
-	sqlxDB := sqlx.New(env)
-	dbDB := db.New(sqlxDB)
-	webScraper := Build(env, dbDB)
+	db := sqlite.New(env)
+	handlerHandler := handler.New(env, db)
+	webScraper := Build(handlerHandler)
 	return webScraper
 }

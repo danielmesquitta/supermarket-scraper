@@ -24,8 +24,8 @@ func main() {
 	g.Go(func() error {
 		defer cancel()
 
-		app := webscraper.New()
-		if err := app.Run(ctx); err != nil {
+		ws := webscraper.New()
+		if err := ws.Run(ctx); err != nil {
 			return err
 		}
 
@@ -45,12 +45,12 @@ func handleError(err error) {
 	var appErr *errs.Err
 	if errors.As(err, &appErr) {
 		log.Printf(
-			"failed to run app: %v\nstacktrace: %v",
+			"failed to run: %v\nstacktrace: %v",
 			appErr.Error(),
 			appErr.StackTrace,
 		)
 		return
 	}
 
-	log.Printf("failed to run app: %v", err)
+	log.Printf("failed to run: %v", err)
 }

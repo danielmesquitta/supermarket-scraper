@@ -1,30 +1,40 @@
-package db
+package sqlite
 
 import (
+	_ "github.com/mattn/go-sqlite3" // SQLite driver
+
 	"context"
+	"log"
 	"strings"
 	"time"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
 )
 
 type DB struct {
-	sqlx *sqlx.DB
+	db *sqlx.DB
 }
 
 func New(
-	sqlx *sqlx.DB,
+	e *env.Env,
 ) *DB {
+	db, err := sqlx.Open("sqlite3", e.SQLiteDBPath)
+	if err != nil {
+		log.Fatalf("failed to open database: %v", err)
+	}
+
 	return &DB{
-		sqlx: sqlx,
+		db: db,
 	}
 }
 
 func (d *DB) Close() error {
-	return d.sqlx.Close()
+	return d.db.Close()
 }
 
 func (d *DB) CreateProducts(
@@ -62,7 +72,7 @@ func (d *DB) CreateProducts(
 		}
 
 		fullQuery := query + strings.Join(placeholders, ",")
-		if _, err := d.sqlx.ExecContext(ctx, fullQuery, args...); err != nil {
+		if _, err := d.db.ExecContext(ctx, fullQuery, args...); err != nil {
 			return errs.New(err)
 		}
 	}
@@ -81,23 +91,24 @@ func (d *DB) CreateError(
 
 	err.ID = uuid.New().String()
 
-	if _, err := d.sqlx.NamedExecContext(ctx, query, err); err != nil {
+	if _, err := d.db.NamedExecContext(ctx, query, err); err != nil {
 		return errs.New(err)
 	}
 
 	return nil
 }
 
-func (d *DB) ListErrors(
+func (d *DB) ListProductProcessingErrors(
 	ctx context.Context,
 ) ([]entity.Error, error) {
 	query := `
     SELECT * FROM errors
     WHERE deleted_at IS NULL
+    AND type = 'failed_processing_products_page'
     ORDER BY created_at DESC
   `
 	var errors []entity.Error
-	if err := d.sqlx.SelectContext(ctx, &errors, query); err != nil {
+	if err := d.db.SelectContext(ctx, &errors, query); err != nil {
 		return nil, errs.New(err)
 	}
 
@@ -119,12 +130,35 @@ func (d *DB) DeleteErrors(
 		return errs.New(err)
 	}
 
-	query = d.sqlx.Rebind(query)
+	query = d.db.Rebind(query)
 
-	_, err = d.sqlx.ExecContext(ctx, query, args...)
+	_, err = d.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return errs.New(err)
 	}
 
 	return nil
+}
+
+func (d *DB) ListProductsByNames(
+	ctx context.Context,
+	names []string,
+) ([]entity.Product, error) {
+	query := `
+    SELECT * FROM products
+    WHERE deleted_at IS NULL
+    AND name IN (?)
+  `
+	query, args, err := sqlx.In(query, names)
+	if err != nil {
+		return nil, errs.New(err)
+	}
+
+	query = d.db.Rebind(query)
+	var products []entity.Product
+	if err := d.db.SelectContext(ctx, &products, query, args...); err != nil {
+		return nil, errs.New(err)
+	}
+
+	return products, nil
 }

@@ -20,7 +20,11 @@ setup:
 
 .PHONY: run
 run:
-	@go run ./cmd/webscraper
+	@go run ./cmd/run
+
+.PHONY: retry
+retry:
+	@go run ./cmd/retry
 
 .PHONY: clear
 clear:

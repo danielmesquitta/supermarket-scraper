@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/mattn/go-sqlite3 v1.14.25
 	github.com/playwright-community/playwright-go v0.5001.0
 	github.com/spf13/viper v1.20.1
 	golang.org/x/sync v0.12.0

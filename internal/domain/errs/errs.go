@@ -33,7 +33,7 @@ func New(err any, types ...ErrType) *Err {
 	}
 	switch v := err.(type) {
 	case *Err:
-		if v.Type == "" {
+		if v.Type == "" || v.Type == ErrTypeUnknown {
 			v.Type = errType
 		}
 		return v
