@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
-
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
@@ -61,13 +60,13 @@ func (d *DB) CreateProducts(
 		for i := range batch {
 			batch[i].ID = uuid.New().String()
 			records = append(records, goqu.Record{
-				schema.Product.ColumnID():    batch[i].ID,
-				schema.Product.ColumnName():  batch[i].Name,
-				schema.Product.ColumnPrice(): batch[i].Price,
+				schema.Product.ID():    batch[i].ID,
+				schema.Product.Name():  batch[i].Name,
+				schema.Product.Price(): batch[i].Price,
 			})
 		}
 
-		ds := d.gdb.Insert(schema.Product.Table()).Rows(records)
+		ds := d.gdb.Insert(schema.Product.String()).Rows(records)
 		sql, args, err := ds.Prepared(true).ToSQL()
 		if err != nil {
 			return errs.New(err)
@@ -87,12 +86,12 @@ func (d *DB) CreateError(
 ) error {
 	errRec.ID = uuid.New().String()
 
-	ds := d.gdb.Insert(schema.Error.Table()).Rows(goqu.Record{
-		schema.Error.ColumnID():         errRec.ID,
-		schema.Error.ColumnMessage():    errRec.Message,
-		schema.Error.ColumnType():       errRec.Type,
-		schema.Error.ColumnStackTrace(): errRec.StackTrace,
-		schema.Error.ColumnMetadata():   errRec.Metadata,
+	ds := d.gdb.Insert(schema.Error.String()).Rows(goqu.Record{
+		schema.Error.ID():         errRec.ID,
+		schema.Error.Message():    errRec.Message,
+		schema.Error.Type():       errRec.Type,
+		schema.Error.StackTrace(): errRec.StackTrace,
+		schema.Error.Metadata():   errRec.Metadata,
 	})
 	sql, args, err := ds.Prepared(true).ToSQL()
 	if err != nil {
@@ -110,15 +109,15 @@ func (d *DB) ListProductProcessingErrors(
 	ctx context.Context,
 ) ([]entity.Error, error) {
 	ds := d.gdb.
-		From(schema.Error.Table()).
-		Select(schema.Error.ColumnAll()).
+		From(schema.Error.String()).
+		Select(schema.Error.All()).
 		Where(
 			goqu.Ex{
-				schema.Error.ColumnDeletedAt(): nil,
-				schema.Error.ColumnType():      errs.ErrTypeFailedProcessingProductsPage,
+				schema.Error.DeletedAt(): nil,
+				schema.Error.Type():      errs.ErrTypeFailedProcessingProductsPage,
 			},
 		).
-		Order(goqu.C(schema.Error.ColumnCreatedAt()).Desc())
+		Order(goqu.C(schema.Error.CreatedAt()).Desc())
 
 	sql, args, err := ds.Prepared(true).ToSQL()
 	if err != nil {
@@ -138,9 +137,9 @@ func (d *DB) DeleteErrors(
 	ids []string,
 ) error {
 	ds := d.gdb.
-		Update(schema.Error.Table()).
-		Set(goqu.Record{schema.Error.ColumnDeletedAt(): time.Now()}).
-		Where(goqu.Ex{schema.Error.ColumnID(): ids})
+		Update(schema.Error.String()).
+		Set(goqu.Record{schema.Error.DeletedAt(): time.Now()}).
+		Where(goqu.Ex{schema.Error.ID(): ids})
 
 	sql, args, err := ds.Prepared(true).ToSQL()
 	if err != nil {
@@ -160,12 +159,12 @@ func (d *DB) ListProductsByNames(
 	names []string,
 ) ([]entity.Product, error) {
 	ds := d.gdb.
-		From(schema.Product.Table()).
-		Select(schema.Product.ColumnAll()).
+		From(schema.Product.String()).
+		Select(schema.Product.All()).
 		Where(
 			goqu.Ex{
-				schema.Product.ColumnDeletedAt(): nil,
-				schema.Product.ColumnName():      names,
+				schema.Product.DeletedAt(): nil,
+				schema.Product.Name():      names,
 			},
 		)
 

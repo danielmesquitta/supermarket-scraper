@@ -1,7 +1,6 @@
 include .env
 
 schema=./sql/schema.prisma
-ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 .PHONY: default
 default: run
@@ -57,6 +56,3 @@ deploy_migrations:
 .PHONY: reset_db
 reset_db:
 	@prisma-client-go migrate reset --schema=$(schema) --skip-generate
-
-%::
-	@true

@@ -6,39 +6,39 @@ import "fmt"
 
 type tableError string
 
-func (t tableError) Table() string {
+func (t tableError) String() string {
 	return string(t)
 }
 
-func (t tableError) ColumnAll() string {
+func (t tableError) All() string {
 	return fmt.Sprintf("%s.*", t)
 }
 
-func (t tableError) ColumnCreatedAt() string {
+func (t tableError) CreatedAt() string {
 	return fmt.Sprintf("%s.created_at", t)
 }
 
-func (t tableError) ColumnDeletedAt() string {
+func (t tableError) DeletedAt() string {
 	return fmt.Sprintf("%s.deleted_at", t)
 }
 
-func (t tableError) ColumnID() string {
+func (t tableError) ID() string {
 	return fmt.Sprintf("%s.id", t)
 }
 
-func (t tableError) ColumnMessage() string {
+func (t tableError) Message() string {
 	return fmt.Sprintf("%s.message", t)
 }
 
-func (t tableError) ColumnMetadata() string {
+func (t tableError) Metadata() string {
 	return fmt.Sprintf("%s.metadata", t)
 }
 
-func (t tableError) ColumnStackTrace() string {
+func (t tableError) StackTrace() string {
 	return fmt.Sprintf("%s.stack_trace", t)
 }
 
-func (t tableError) ColumnType() string {
+func (t tableError) Type() string {
 	return fmt.Sprintf("%s.type", t)
 }
 
@@ -46,31 +46,31 @@ const Error = tableError("errors")
 
 type tableProduct string
 
-func (t tableProduct) Table() string {
+func (t tableProduct) String() string {
 	return string(t)
 }
 
-func (t tableProduct) ColumnAll() string {
+func (t tableProduct) All() string {
 	return fmt.Sprintf("%s.*", t)
 }
 
-func (t tableProduct) ColumnCreatedAt() string {
+func (t tableProduct) CreatedAt() string {
 	return fmt.Sprintf("%s.created_at", t)
 }
 
-func (t tableProduct) ColumnDeletedAt() string {
+func (t tableProduct) DeletedAt() string {
 	return fmt.Sprintf("%s.deleted_at", t)
 }
 
-func (t tableProduct) ColumnID() string {
+func (t tableProduct) ID() string {
 	return fmt.Sprintf("%s.id", t)
 }
 
-func (t tableProduct) ColumnName() string {
+func (t tableProduct) Name() string {
 	return fmt.Sprintf("%s.name", t)
 }
 
-func (t tableProduct) ColumnPrice() string {
+func (t tableProduct) Price() string {
 	return fmt.Sprintf("%s.price", t)
 }
 
