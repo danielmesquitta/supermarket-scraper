@@ -3,6 +3,7 @@ module github.com/danielmesquitta/supermarket-web-scraper
 go 1.24.1
 
 require (
+	github.com/doug-martin/goqu/v9 v9.19.0
 	github.com/fatih/color v1.18.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1

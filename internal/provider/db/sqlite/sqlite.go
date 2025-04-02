@@ -1,12 +1,12 @@
 package sqlite
 
 import (
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
-
 	"context"
 	"log"
-	"strings"
 	"time"
+
+	"github.com/doug-martin/goqu/v9"
+	_ "github.com/mattn/go-sqlite3" // SQLite driver
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -14,10 +14,12 @@ import (
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
 	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/db/sqlite/schema"
 )
 
 type DB struct {
-	db *sqlx.DB
+	db  *sqlx.DB
+	gdb *goqu.Database
 }
 
 func New(
@@ -28,8 +30,11 @@ func New(
 		log.Fatalf("failed to open database: %v", err)
 	}
 
+	gdb := goqu.New("sqlite3", db.DB)
+
 	return &DB{
-		db: db,
+		db:  db,
+		gdb: gdb,
 	}
 }
 
@@ -48,31 +53,27 @@ func (d *DB) CreateProducts(
 	}
 
 	for i := 0; i < len(products); i += batchSize {
-		end := i + batchSize
-		if end > len(products) {
-			end = len(products)
-		}
+		end := min(i+batchSize, len(products))
 
 		batch := products[i:end]
+		var records []goqu.Record
 
-		query := "INSERT INTO products (id, name, price) VALUES "
-		var placeholders []string
-		var args []any
-
-		for j := range batch {
-			batch[j].ID = uuid.New().String()
-
-			placeholders = append(placeholders, "(?, ?, ?)")
-			args = append(
-				args,
-				batch[j].ID,
-				batch[j].Name,
-				batch[j].Price,
-			)
+		for i := range batch {
+			batch[i].ID = uuid.New().String()
+			records = append(records, goqu.Record{
+				schema.Product.ColumnID():    batch[i].ID,
+				schema.Product.ColumnName():  batch[i].Name,
+				schema.Product.ColumnPrice(): batch[i].Price,
+			})
 		}
 
-		fullQuery := query + strings.Join(placeholders, ",")
-		if _, err := d.db.ExecContext(ctx, fullQuery, args...); err != nil {
+		ds := d.gdb.Insert(schema.Product.Table()).Rows(records)
+		sql, args, err := ds.Prepared(true).ToSQL()
+		if err != nil {
+			return errs.New(err)
+		}
+
+		if _, err := d.db.ExecContext(ctx, sql, args...); err != nil {
 			return errs.New(err)
 		}
 	}
@@ -82,16 +83,23 @@ func (d *DB) CreateProducts(
 
 func (d *DB) CreateError(
 	ctx context.Context,
-	err entity.Error,
+	errRec entity.Error,
 ) error {
-	query := `
-    INSERT INTO errors (id, message, type, stack_trace, metadata)
-    VALUES (:id, :message, :type, :stack_trace, :metadata)
-  `
+	errRec.ID = uuid.New().String()
 
-	err.ID = uuid.New().String()
+	ds := d.gdb.Insert(schema.Error.Table()).Rows(goqu.Record{
+		schema.Error.ColumnID():         errRec.ID,
+		schema.Error.ColumnMessage():    errRec.Message,
+		schema.Error.ColumnType():       errRec.Type,
+		schema.Error.ColumnStackTrace(): errRec.StackTrace,
+		schema.Error.ColumnMetadata():   errRec.Metadata,
+	})
+	sql, args, err := ds.Prepared(true).ToSQL()
+	if err != nil {
+		return errs.New(err)
+	}
 
-	if _, err := d.db.NamedExecContext(ctx, query, err); err != nil {
+	if _, err := d.db.ExecContext(ctx, sql, args...); err != nil {
 		return errs.New(err)
 	}
 
@@ -101,14 +109,24 @@ func (d *DB) CreateError(
 func (d *DB) ListProductProcessingErrors(
 	ctx context.Context,
 ) ([]entity.Error, error) {
-	query := `
-    SELECT * FROM errors
-    WHERE deleted_at IS NULL
-    AND type = 'failed_processing_products_page'
-    ORDER BY created_at DESC
-  `
+	ds := d.gdb.
+		From(schema.Error.Table()).
+		Select(schema.Error.ColumnAll()).
+		Where(
+			goqu.Ex{
+				schema.Error.ColumnDeletedAt(): nil,
+				schema.Error.ColumnType():      errs.ErrTypeFailedProcessingProductsPage,
+			},
+		).
+		Order(goqu.C(schema.Error.ColumnCreatedAt()).Desc())
+
+	sql, args, err := ds.Prepared(true).ToSQL()
+	if err != nil {
+		return nil, errs.New(err)
+	}
+
 	var errors []entity.Error
-	if err := d.db.SelectContext(ctx, &errors, query); err != nil {
+	if err := d.db.SelectContext(ctx, &errors, sql, args...); err != nil {
 		return nil, errs.New(err)
 	}
 
@@ -119,20 +137,17 @@ func (d *DB) DeleteErrors(
 	ctx context.Context,
 	ids []string,
 ) error {
-	query := `
-    UPDATE errors
-    SET deleted_at = ?
-    WHERE id IN (?)
-  `
+	ds := d.gdb.
+		Update(schema.Error.Table()).
+		Set(goqu.Record{schema.Error.ColumnDeletedAt(): time.Now()}).
+		Where(goqu.Ex{schema.Error.ColumnID(): ids})
 
-	query, args, err := sqlx.In(query, time.Now(), ids)
+	sql, args, err := ds.Prepared(true).ToSQL()
 	if err != nil {
 		return errs.New(err)
 	}
 
-	query = d.db.Rebind(query)
-
-	_, err = d.db.ExecContext(ctx, query, args...)
+	_, err = d.db.ExecContext(ctx, sql, args...)
 	if err != nil {
 		return errs.New(err)
 	}
@@ -144,19 +159,23 @@ func (d *DB) ListProductsByNames(
 	ctx context.Context,
 	names []string,
 ) ([]entity.Product, error) {
-	query := `
-    SELECT * FROM products
-    WHERE deleted_at IS NULL
-    AND name IN (?)
-  `
-	query, args, err := sqlx.In(query, names)
+	ds := d.gdb.
+		From(schema.Product.Table()).
+		Select(schema.Product.ColumnAll()).
+		Where(
+			goqu.Ex{
+				schema.Product.ColumnDeletedAt(): nil,
+				schema.Product.ColumnName():      names,
+			},
+		)
+
+	sql, args, err := ds.Prepared(true).ToSQL()
 	if err != nil {
 		return nil, errs.New(err)
 	}
 
-	query = d.db.Rebind(query)
 	var products []entity.Product
-	if err := d.db.SelectContext(ctx, &products, query, args...); err != nil {
+	if err := d.db.SelectContext(ctx, &products, sql, args...); err != nil {
 		return nil, errs.New(err)
 	}
 
