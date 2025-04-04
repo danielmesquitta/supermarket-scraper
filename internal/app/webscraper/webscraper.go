@@ -1,7 +1,7 @@
 package webscraper
 
 import (
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/app/webscraper/handler"
+	"github.com/danielmesquitta/supermarket-scraper/internal/app/webscraper/handler"
 )
 
 type WebScraper struct {

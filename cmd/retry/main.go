@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/app/webscraper"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-scraper/internal/app/webscraper"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/errs"
 )
 
 func main() {

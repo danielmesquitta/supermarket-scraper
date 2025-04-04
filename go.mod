@@ -1,4 +1,4 @@
-module github.com/danielmesquitta/supermarket-web-scraper
+module github.com/danielmesquitta/supermarket-scraper
 
 go 1.24.1
 
@@ -8,7 +8,6 @@ require (
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.26.0
-	github.com/go-resty/resty/v2 v2.16.5
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/jmoiron/sqlx v1.4.0
@@ -21,7 +20,7 @@ require (
 
 require (
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
-	github.com/fsnotify/fsnotify v1.8.0 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect

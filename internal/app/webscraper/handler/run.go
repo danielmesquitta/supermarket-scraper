@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/entity"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/errs"
 	"github.com/playwright-community/playwright-go"
 )
 

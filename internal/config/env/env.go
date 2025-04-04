@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	root "github.com/danielmesquitta/supermarket-web-scraper"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/pkg/validator"
+	root "github.com/danielmesquitta/supermarket-scraper"
+	"github.com/danielmesquitta/supermarket-scraper/internal/pkg/validator"
 	"github.com/spf13/viper"
 )
 

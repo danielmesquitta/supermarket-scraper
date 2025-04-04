@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
+	"github.com/danielmesquitta/supermarket-scraper/internal/config/env"
 )
 
 type Handler struct {

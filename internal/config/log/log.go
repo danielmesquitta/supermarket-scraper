@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
+	"github.com/danielmesquitta/supermarket-scraper/internal/config/env"
 	"github.com/fatih/color"
 )
 

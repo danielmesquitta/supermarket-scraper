@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/supermarketapi"
+	"github.com/danielmesquitta/supermarket-scraper/internal/config/env"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/entity"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-scraper/internal/provider/supermarketapi"
 	"golang.org/x/sync/errgroup"
 	"resty.dev/v3"
 )

@@ -1,6 +1,6 @@
 package apiscraper
 
-import "github.com/danielmesquitta/supermarket-web-scraper/internal/app/apiscraper/handler"
+import "github.com/danielmesquitta/supermarket-scraper/internal/app/apiscraper/handler"
 
 type APIScraper struct {
 	h *handler.Handler

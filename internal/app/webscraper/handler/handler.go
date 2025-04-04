@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/db/sqlite"
+	"github.com/danielmesquitta/supermarket-scraper/internal/config/env"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/entity"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-scraper/internal/provider/db/sqlite"
 	"github.com/playwright-community/playwright-go"
 )
 

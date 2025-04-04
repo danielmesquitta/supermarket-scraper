@@ -3,7 +3,7 @@ package supermarketapi
 import (
 	"context"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/entity"
 )
 
 type SupermarketAPI interface {

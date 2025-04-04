@@ -10,10 +10,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/config/env"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/entity"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/domain/errs"
-	"github.com/danielmesquitta/supermarket-web-scraper/internal/provider/db/sqlite/schema"
+	"github.com/danielmesquitta/supermarket-scraper/internal/config/env"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/entity"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-scraper/internal/provider/db/sqlite/schema"
 )
 
 type DB struct {
