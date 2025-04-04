@@ -59,11 +59,15 @@ func (d *DB) CreateProducts(
 
 		for i := range batch {
 			batch[i].ID = uuid.New().String()
-			records = append(records, goqu.Record{
+
+			record := goqu.Record{
 				schema.Product.ID():    batch[i].ID,
 				schema.Product.Name():  batch[i].Name,
 				schema.Product.Price(): batch[i].Price,
-			})
+				schema.Product.Code():  batch[i].Code,
+			}
+
+			records = append(records, record)
 		}
 
 		ds := d.gdb.Insert(schema.Product.String()).Rows(records)
@@ -105,8 +109,9 @@ func (d *DB) CreateError(
 	return nil
 }
 
-func (d *DB) ListProductProcessingErrors(
+func (d *DB) ListErrorsByType(
 	ctx context.Context,
+	errType errs.ErrType,
 ) ([]entity.Error, error) {
 	ds := d.gdb.
 		From(schema.Error.String()).
@@ -114,7 +119,7 @@ func (d *DB) ListProductProcessingErrors(
 		Where(
 			goqu.Ex{
 				schema.Error.DeletedAt(): nil,
-				schema.Error.Type():      errs.ErrTypeFailedProcessingProductsPage,
+				schema.Error.Type():      string(errType),
 			},
 		).
 		Order(goqu.C(schema.Error.CreatedAt()).Desc())

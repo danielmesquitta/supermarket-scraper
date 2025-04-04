@@ -13,7 +13,10 @@ import (
 const retryPagesLimit = 10
 
 func (h *Handler) Retry(ctx context.Context) error {
-	dbErrors, err := h.db.ListProductProcessingErrors(ctx)
+	dbErrors, err := h.db.ListErrorsByType(
+		ctx,
+		errs.ErrTypeFailedProcessingProductsPage,
+	)
 	if err != nil {
 		return errs.New(err)
 	}
