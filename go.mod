@@ -8,6 +8,7 @@ require (
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/jmoiron/sqlx v1.4.0
@@ -15,6 +16,7 @@ require (
 	github.com/playwright-community/playwright-go v0.5001.0
 	github.com/spf13/viper v1.20.1
 	golang.org/x/sync v0.12.0
+	resty.dev/v3 v3.0.0-beta.2
 )
 
 require (

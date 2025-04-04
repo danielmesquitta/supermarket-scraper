@@ -26,10 +26,12 @@ const (
 type Env struct {
 	v validator.Validator
 
-	Environment  Environment `mapstructure:"ENVIRONMENT"    validate:"required,oneof=development production staging test"`
-	ChromePath   string      `mapstructure:"CHROME_PATH"    validate:"required"`
-	CDPPort      string      `mapstructure:"CDP_PORT"       validate:"required"`
-	SQLiteDBPath string      `mapstructure:"SQLITE_DB_PATH" validate:"required"`
+	Environment        Environment `mapstructure:"ENVIRONMENT"           validate:"required,oneof=development production staging test"`
+	ChromePath         string      `mapstructure:"CHROME_PATH"           validate:"required"`
+	CDPPort            string      `mapstructure:"CDP_PORT"              validate:"required"`
+	SQLiteDBPath       string      `mapstructure:"SQLITE_DB_PATH"        validate:"required"`
+	PostgresDBURL      string      `mapstructure:"POSTGRES_DB_URL"       validate:"required"`
+	AtacadaoAPIBaseURL string      `mapstructure:"ATACADAO_API_BASE_URL" validate:"required"`
 }
 
 func New(v validator.Validator) *Env {

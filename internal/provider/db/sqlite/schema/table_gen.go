@@ -54,6 +54,10 @@ func (t tableProduct) All() string {
 	return fmt.Sprintf("%s.*", t)
 }
 
+func (t tableProduct) Code() string {
+	return fmt.Sprintf("%s.code", t)
+}
+
 func (t tableProduct) CreatedAt() string {
 	return fmt.Sprintf("%s.created_at", t)
 }
