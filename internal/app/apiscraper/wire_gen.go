@@ -4,25 +4,27 @@
 //go:build !wireinject
 // +build !wireinject
 
-package webscraper
+package apiscraper
 
 import (
-	"github.com/danielmesquitta/supermarket-scraper/internal/app/webscraper/handler"
+	"github.com/danielmesquitta/supermarket-scraper/internal/app/apiscraper/handler"
 	"github.com/danielmesquitta/supermarket-scraper/internal/config"
 	"github.com/danielmesquitta/supermarket-scraper/internal/domain/usecase"
 	"github.com/danielmesquitta/supermarket-scraper/internal/pkg/validator"
 	"github.com/danielmesquitta/supermarket-scraper/internal/provider/db/sqlite"
+	"github.com/danielmesquitta/supermarket-scraper/internal/provider/supermarketapi/atacadaoapi"
 )
 
 // Injectors from wire.go:
 
-func New() *WebScraper {
+func New() *APIScraper {
 	validation := validator.New()
 	env := config.LoadConfig(validation)
+	atacadaoAPI := atacadaoapi.New(env)
 	db := sqlite.New(env)
 	saveProductsUseCase := usecase.NewSaveProductsUseCase(db)
 	saveErrorUseCase := usecase.NewSaveErrorUseCase(db)
-	handlerHandler := handler.New(env, db, saveProductsUseCase, saveErrorUseCase)
-	webScraper := Build(handlerHandler)
-	return webScraper
+	handlerHandler := handler.New(env, atacadaoAPI, saveProductsUseCase, saveErrorUseCase)
+	apiScraper := Build(handlerHandler)
+	return apiScraper
 }

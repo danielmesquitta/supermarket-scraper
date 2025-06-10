@@ -2,32 +2,36 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
-	"time"
 
 	"github.com/danielmesquitta/supermarket-scraper/internal/config/env"
 	"github.com/danielmesquitta/supermarket-scraper/internal/domain/entity"
 	"github.com/danielmesquitta/supermarket-scraper/internal/domain/errs"
+	"github.com/danielmesquitta/supermarket-scraper/internal/domain/usecase"
 	"github.com/danielmesquitta/supermarket-scraper/internal/provider/db/sqlite"
 	"github.com/playwright-community/playwright-go"
 )
 
 type Handler struct {
-	e  *env.Env
-	db *sqlite.DB
+	e    *env.Env
+	db   *sqlite.DB
+	spuc *usecase.SaveProductsUseCase
+	seuc *usecase.SaveErrorUseCase
 }
 
 func New(
 	e *env.Env,
 	db *sqlite.DB,
+	spuc *usecase.SaveProductsUseCase,
+	seuc *usecase.SaveErrorUseCase,
 ) *Handler {
 	return &Handler{
-		e:  e,
-		db: db,
+		e:    e,
+		db:   db,
+		spuc: spuc,
+		seuc: seuc,
 	}
 }
 
@@ -70,7 +74,8 @@ func (h *Handler) processProductsFromBrowserContext(
 		if err == nil {
 			return
 		}
-		_ = h.saveError(
+		_ = h.seuc.Execute(
+			ctx,
 			errs.New(err, errs.ErrTypeFailedProcessingProductsPage),
 			map[string]any{"page_url": page.URL()},
 		)
@@ -176,84 +181,6 @@ func (h *Handler) processProductsFromPage(
 	}
 
 	return products, nil
-}
-
-func (h *Handler) saveProducts(
-	ctx context.Context,
-	products []entity.Product,
-) error {
-	if len(products) == 0 {
-		return nil
-	}
-
-	names := []string{}
-	for _, product := range products {
-		names = append(names, product.Name)
-	}
-
-	existingProducts, err := h.db.ListProductsByNames(ctx, names)
-	if err != nil {
-		return errs.New(err)
-	}
-
-	existingProductsByName := map[string]entity.Product{}
-	for _, product := range existingProducts {
-		existingProductsByName[product.Name] = product
-	}
-
-	productsToCreate := []entity.Product{}
-	for _, product := range products {
-		if _, ok := existingProductsByName[product.Name]; ok {
-			continue
-		}
-		productsToCreate = append(productsToCreate, product)
-	}
-
-	if err := h.db.CreateProducts(ctx, productsToCreate); err != nil {
-		return errs.New(err)
-	}
-
-	return nil
-}
-
-func (h *Handler) saveError(
-	err error,
-	metadata map[string]any,
-) error {
-	if err == nil {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	entityErr := entity.Error{
-		Message: err.Error(),
-		Type:    string(errs.ErrTypeUnknown),
-	}
-
-	var appErr *errs.Err
-	if errors.As(err, &appErr) {
-		if metadata != nil {
-			metadataBytes, err := json.Marshal(metadata)
-			if err != nil {
-				return errs.New(err)
-			}
-			entityErr.Metadata = string(metadataBytes)
-		}
-
-		if appErr.Type != "" {
-			entityErr.Type = string(appErr.Type)
-		}
-
-		entityErr.StackTrace = appErr.StackTrace
-	}
-
-	if err := h.db.CreateError(ctx, entityErr); err != nil {
-		return errs.New(err)
-	}
-
-	return nil
 }
 
 func parseInt(s string) (int, error) {

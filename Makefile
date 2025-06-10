@@ -15,7 +15,7 @@ update:
 
 .PHONY: setup
 setup:
-	@$(CHROME_PATH) --remote-debugging-port=$(CDP_PORT) --profile-directory=Default
+	@if [ ! -d tmp/user-data-dir ]; then cp -r $(USER_DATA_DIR) tmp/user-data-dir; fi && $(CHROME_PATH) --remote-debugging-port=$(CDP_PORT) --user-data-dir=tmp/user-data-dir
 
 .PHONY: run
 run:

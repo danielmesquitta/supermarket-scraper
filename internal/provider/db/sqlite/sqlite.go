@@ -61,10 +61,10 @@ func (d *DB) CreateProducts(
 			batch[i].ID = uuid.New().String()
 
 			record := goqu.Record{
-				schema.Product.ID():    batch[i].ID,
-				schema.Product.Name():  batch[i].Name,
-				schema.Product.Price(): batch[i].Price,
-				schema.Product.Code():  batch[i].Code,
+				"id":    batch[i].ID,
+				"name":  batch[i].Name,
+				"price": batch[i].Price,
+				"code":  batch[i].Code,
 			}
 
 			records = append(records, record)

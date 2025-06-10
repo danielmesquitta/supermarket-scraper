@@ -75,7 +75,8 @@ func (h *Handler) processCategory(
 			return
 		}
 
-		_ = h.saveError(
+		_ = h.seuc.Execute(
+			ctx,
 			errs.New(err, errs.ErrTypeFailedProcessingCategoryPage),
 			map[string]any{"page_url": page.URL()},
 		)
@@ -124,7 +125,7 @@ func (h *Handler) processCategory(
 		return nil
 	}
 
-	if err = h.saveProducts(ctx, products); err != nil {
+	if err = h.spuc.Execute(ctx, products); err != nil {
 		return errs.New(err)
 	}
 
@@ -154,7 +155,7 @@ func (h *Handler) processCategory(
 				return nil
 			}
 
-			if err = h.saveProducts(ctx, products); err != nil {
+			if err = h.spuc.Execute(ctx, products); err != nil {
 				return errs.New(err)
 			}
 

@@ -80,24 +80,18 @@ func (a *AtacadaoAPI) bulkRequests(
 		Total:    0,
 		Category: category,
 	}
-	err := a.doRequest(ctx, mu, products, defaultOpts)
+	err := a.doRequest(ctx, mu, products, &defaultOpts)
 	if err != nil {
 		return err
 	}
 
-	totalPages := math.Ceil(
-		float64(defaultOpts.Total) / float64(defaultOpts.Size),
-	)
-
-	defaultOpts.Total = int(totalPages)
-
 	g := errgroup.Group{}
 	g.SetLimit(10)
-	for i := 2; i <= int(totalPages); i++ {
+	for i := 2; i <= defaultOpts.Total; i++ {
 		g.Go(func() error {
 			opts := defaultOpts
 			opts.Page = i
-			return a.doRequest(ctx, mu, products, opts)
+			return a.doRequest(ctx, mu, products, &opts)
 		})
 	}
 
@@ -119,7 +113,7 @@ func (a *AtacadaoAPI) doRequest(
 	ctx context.Context,
 	mu *sync.Mutex,
 	products *[]entity.Product,
-	opts requestOptions,
+	opts *requestOptions,
 ) error {
 	queryParams, err := buildQueryParams(opts.Page, opts.Size, opts.Category)
 	if err != nil {
@@ -141,6 +135,9 @@ func (a *AtacadaoAPI) doRequest(
 	if err != nil {
 		return errs.New(err)
 	}
+
+	totalPages := math.Ceil(float64(response.TotalCount) / float64(opts.Size))
+	opts.Total = int(totalPages)
 
 	mu.Lock()
 	*products = append(*products, response.Products...)

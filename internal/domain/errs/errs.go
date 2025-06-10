@@ -12,6 +12,8 @@ const (
 	ErrTypeUnknown                      ErrType = "unknown"
 	ErrTypeFailedProcessingProductsPage ErrType = "failed_processing_products_page"
 	ErrTypeFailedProcessingCategoryPage ErrType = "failed_processing_category_page"
+	ErrTypeFailedListingProducts        ErrType = "failed_listing_products"
+	ErrTypeFailedSavingProducts         ErrType = "failed_saving_products"
 )
 
 type Err struct {

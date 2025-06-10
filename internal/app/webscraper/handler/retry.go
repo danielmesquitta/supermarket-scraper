@@ -68,7 +68,7 @@ func (h *Handler) Retry(ctx context.Context) error {
 				return nil
 			}
 
-			if err = h.saveProducts(ctx, products); err != nil {
+			if err = h.spuc.Execute(ctx, products); err != nil {
 				return errs.New(err)
 			}
 
