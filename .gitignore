@@ -3,3 +3,5 @@
 
 tmp/*
 !.gitkeep
+
+sql/sqlite.db
